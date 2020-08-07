@@ -1,11 +1,11 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use kf_protocol::{Encoder, Decoder};
-use kf_protocol::bytes::{BufMut, Buf};
+use kf_protocol::bytes::{Buf, BufMut};
 use kf_protocol::Version;
+use kf_protocol::{Decoder, Encoder};
 
 // -----------------------------------
 // GroupAssignment
@@ -41,7 +41,6 @@ pub struct GroupAssignment {
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct Assignment {
-
     pub reserved_i16: i16,
 
     pub topics: Vec<String>,
@@ -221,5 +220,4 @@ mod test {
 
         assert_eq!(data, exected_data);
     }
-
 }

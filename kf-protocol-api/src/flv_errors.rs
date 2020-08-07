@@ -6,8 +6,8 @@
 use serde::Serialize;
 
 use flv_util::string_helper::upper_cammel_case_to_sentence;
-use kf_protocol_derive::Encode;
 use kf_protocol_derive::Decode;
+use kf_protocol_derive::Encode;
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -45,11 +45,10 @@ impl Default for FlvErrorCode {
 }
 
 impl FlvErrorCode {
-
     pub fn is_ok(&self) -> bool {
         match self {
             Self::None => true,
-            _ => false
+            _ => false,
         }
     }
 

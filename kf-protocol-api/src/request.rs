@@ -1,7 +1,7 @@
-use std::io::Error as IoError;
-use std::path::Path;
 use std::fmt;
 use std::fmt::Display;
+use std::io::Error as IoError;
+use std::path::Path;
 
 use log::trace;
 
@@ -28,13 +28,14 @@ impl<R> RequestMessage<R> {
     }
 }
 
-
-impl <R>fmt::Display for RequestMessage<R> where R: Display{
+impl<R> fmt::Display for RequestMessage<R>
+where
+    R: Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{} {}",self.header,self.request)      
+        write!(f, "{} {}", self.header, self.request)
     }
 }
-
 
 impl<R> Default for RequestMessage<R>
 where
@@ -144,7 +145,12 @@ where
         T: BufMut,
     {
         let len = self.write_size(version) as i32;
-        trace!("encoding kf request: {} version: {}, len: {}", std::any::type_name::<R>(),version,len);
+        trace!(
+            "encoding kf request: {} version: {}, len: {}",
+            std::any::type_name::<R>(),
+            version,
+            len
+        );
         len.encode(out, version)?;
 
         trace!("encoding request header: {:#?}", &self.header);
@@ -159,23 +165,23 @@ where
 #[cfg(test)]
 mod test {
 
-    use std::io::Cursor;
-    use std::io::Error as IoError;
-    use std::convert::TryInto;
     use kf_protocol::bytes::Buf;
     use kf_protocol::bytes::BufMut;
     use kf_protocol::Decoder;
     use kf_protocol::Encoder;
     use kf_protocol::Version;
-    use kf_protocol_derive::Encode;
     use kf_protocol_derive::Decode;
+    use kf_protocol_derive::Encode;
+    use std::convert::TryInto;
+    use std::io::Cursor;
+    use std::io::Error as IoError;
 
     use super::RequestHeader;
     use super::RequestMessage;
     use crate::KfRequestMessage;
 
-    use crate::Request;
     use crate::AllKfApiKey;
+    use crate::Request;
 
     #[derive(Decode, Encode, Debug, Default)]
     pub struct ApiVersionRequest {}
@@ -330,5 +336,4 @@ mod test {
             }
         }
     }
-
 }

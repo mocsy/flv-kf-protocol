@@ -1,11 +1,11 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use kf_protocol::{Encoder, Decoder};
-use kf_protocol::bytes::{BufMut, Buf};
+use kf_protocol::bytes::{Buf, BufMut};
 use kf_protocol::Version;
+use kf_protocol::{Decoder, Encoder};
 
 // -----------------------------------
 // ProtocolMetadata
@@ -206,5 +206,4 @@ mod test {
 
         assert_eq!(data, exected_data);
     }
-
 }

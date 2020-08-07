@@ -1,5 +1,5 @@
-use kf_protocol_derive::Encode;
 use kf_protocol_derive::Decode;
+use kf_protocol_derive::Encode;
 
 #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
 #[repr(u16)]
@@ -92,5 +92,4 @@ mod test {
         assert_eq!(src[0], 0x00);
         assert_eq!(src[1], AllKfApiKey::Metadata as u8);
     }
-
 }

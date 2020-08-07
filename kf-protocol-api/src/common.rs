@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use kf_protocol_derive::Decode;
 use kf_protocol_derive::Encode;
@@ -19,18 +19,15 @@ impl Default for Isolation {
     }
 }
 
-
-
-
 #[derive(Hash, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
 pub struct ReplicaKey {
     pub topic: String,
     pub partition: i32,
 }
 
-unsafe impl Send for ReplicaKey{}
+unsafe impl Send for ReplicaKey {}
 
-unsafe impl Sync for ReplicaKey{}
+unsafe impl Sync for ReplicaKey {}
 
 impl ReplicaKey {
     pub fn new<S, P>(topic: S, partition: P) -> Self
@@ -72,8 +69,6 @@ impl TryFrom<String> for ReplicaKey {
         Ok(ReplicaKey::new(topic, partition))
     }
 }
-
-
 
 #[derive(Debug)]
 pub enum PartitionError {
