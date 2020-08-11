@@ -40,8 +40,8 @@ use syn::parse_macro_input;
 /// ```
 ///
 ///
-/// Decode applys to either Struct of Enum.  For enum, it implements `TryFrom` trait.  
-/// Currenly it only supports integer variants.  
+/// Decode applies to either Struct of Enum.  For enum, it implements `TryFrom` trait.  
+/// Currently it only supports integer variants.  
 ///
 /// So this works
 ///

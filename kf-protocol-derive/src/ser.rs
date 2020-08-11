@@ -123,9 +123,24 @@ fn parse_enum_variants_encoding(
 
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
+        // #[cfg(feature = "discriminant_panic")] {
+        //     if prop.discriminant.is_some() && prop.tag.is_none() && !attrs.encode_discriminant {
+        //         compiler_error!("feature[discriminant_panic]: either #[fluvio_kf(encode_discriminant)] or #[fluvio_kf(tag = ..)] is required on enum: {}", stringify!(#enum_ident));
+        //     }
+        // }
         let field_idx = if let Some(tag) = &prop.tag {
             if let Ok(literal) = TokenStream::from_str(tag) {
                 literal
+            } else {
+                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            }
+        } else if attrs.encode_discriminant {
+            if let Some(dsc) = &prop.discriminant {
+                if let Ok(literal) = TokenStream::from_str(dsc) {
+                    literal
+                } else {
+                    LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+                }
             } else {
                 LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
             }

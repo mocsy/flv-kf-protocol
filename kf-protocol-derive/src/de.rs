@@ -1,4 +1,6 @@
-use crate::ast::{prop::Prop, r#enum::EnumProp, r#enum::FieldKind, r#enum::KfEnum, DeriveItem};
+use crate::ast::{
+    container::ContainerAttributes, prop::Prop, r#enum::EnumProp, r#enum::FieldKind, DeriveItem,
+};
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -31,12 +33,11 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             } else {
                 Ident::new("u8", Span::call_site())
             };
-            let enum_tokens = generate_variant_tokens(&kf_enum.props, &int_type, ident);
-            let try_enum = generate_try_enum_from_kf_enum(&kf_enum, &int_type);
+            let enum_tokens = generate_variant_tokens(&int_type);
+            let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
             let res = quote! {
                 impl #impl_generics kf_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: kf_protocol::Version) -> Result<(),std::io::Error> where T: kf_protocol::bytes::Buf {
-                        // log::trace!("decoding struct: {}", stringify!(#ident));
                         #enum_tokens
                         Ok(())
                     }
@@ -44,7 +45,6 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
 
                 #try_enum
             };
-            // println!("{:#?}", res);
             res
         }
     }
@@ -84,10 +84,23 @@ pub(crate) fn generate_struct_fields(props: &[Prop], struct_ident: &Ident) -> To
     }
 }
 
-fn generate_variant_tokens(
+fn generate_variant_tokens(int_type: &Ident) -> TokenStream {
+    quote! {
+        use std::convert::TryInto;
+        let mut typ: #int_type = 0;
+        typ.decode(src, version)?;
+        log::trace!("decoded type: {}", typ);
+
+        let convert: Self = typ.try_into()?;
+        *self = convert;
+    }
+}
+
+fn generate_try_enum_from_kf_enum(
     props: &[EnumProp],
     int_type: &Ident,
     enum_ident: &Ident,
+    attrs: &ContainerAttributes,
 ) -> TokenStream {
     let mut variant_expr = vec![];
     for (idx, prop) in props.iter().enumerate() {
@@ -95,6 +108,16 @@ fn generate_variant_tokens(
         let field_idx = if let Some(tag) = &prop.tag {
             if let Ok(literal) = TokenStream::from_str(tag) {
                 literal
+            } else {
+                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            }
+        } else if attrs.encode_discriminant {
+            if let Some(dsc) = &prop.discriminant {
+                if let Ok(literal) = TokenStream::from_str(dsc) {
+                    literal
+                } else {
+                    LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+                }
             } else {
                 LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
             }
@@ -120,7 +143,7 @@ fn generate_variant_tokens(
                 quote! {
                     #field_idx => {
                         #(#decode_variant_fields)*
-                        Self::#id{#(#variant_construction_params)*},
+                        Ok(Self::#id{#(#variant_construction_params)*}),
                     }
                 }
             }
@@ -142,12 +165,12 @@ fn generate_variant_tokens(
                 quote! {
                     #field_idx => {
                         #(#decode_variant_fields)*
-                        Self::#id(#(#variant_construction_params)*),
+                        Ok(Self::#id(#(#variant_construction_params)*)),
                     }
                 }
             }
             _ => quote! {
-                #field_idx => Self::#id,
+                #field_idx => Ok(Self::#id),
             },
         };
         variant_expr.push(variant_code);
@@ -160,49 +183,11 @@ fn generate_variant_tokens(
     });
 
     quote! {
-        use std::convert::TryInto;
-        let mut typ: #int_type = 0;
-        typ.decode(src, version)?;
-        log::trace!("decoded type: {}", typ);
-
-        *self = match typ {
-            #(#variant_expr)*
-        };
-    }
-}
-
-fn generate_try_enum_from_kf_enum(kf_enum: &KfEnum, int_type: &Ident) -> TokenStream {
-    let enum_name = &kf_enum.enum_ident;
-    let mut variant_expr = vec![];
-
-    for (idx, prop) in kf_enum.props.iter().enumerate() {
-        let id = &format_ident!("{}", prop.variant_name);
-        if let Some(tag) = &prop.tag {
-            if let Ok(literal) = TokenStream::from_str(tag) {
-                variant_expr.push(quote! {
-                    #literal =>   Ok(#enum_name::#id),
-                });
-            }
-        } else {
-            let idx_val = LitInt::new(&idx.to_string(), Span::call_site());
-            variant_expr.push(quote! {
-                #idx_val =>   Ok(#enum_name::#id),
-            });
-        }
-    }
-
-    variant_expr.push(quote! {
-        _ => return Err(std::io::Error::new(
-                        std::io::ErrorKind::UnexpectedEof,
-                        format!("invalid value: {}",value)
-                ))
-    });
-
-    quote! {
-        impl std::convert::TryFrom<#int_type> for #enum_name {
+        impl std::convert::TryFrom<#int_type> for #enum_ident {
             type Error = std::io::Error;
 
             fn try_from(value: #int_type) -> Result<Self, Self::Error> {
+                let typ = stringify!(#int_type);
                 match value  {
                     #(#variant_expr)*
                 }
